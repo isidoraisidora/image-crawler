@@ -4,12 +4,18 @@ import httpx, os
 from PIL import Image
 from io import BytesIO
 from transformers import BlipProcessor, BlipForConditionalGeneration
+from pathlib import Path
+from dotenv import load_dotenv
 
 app = FastAPI()
 
 # Load model once
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
 model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
+
 
 PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY")
 STOP_WORDS = {"and", "the", "with", "for", "this", "that", "from"}
@@ -46,6 +52,10 @@ async def generate_ai_data(image_url: str):
 
 @app.get("/fetch-images")
 async def fetch_images(query: str = Query(...)):
+
+    if not PEXELS_API_KEY:
+        return {"error": "Incorrect apikey"}
+
     url = f"https://api.pexels.com/v1/search?query={query}&per_page=20"
     headers = {"Authorization": PEXELS_API_KEY}
 

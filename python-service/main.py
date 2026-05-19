@@ -11,7 +11,7 @@ app = FastAPI()
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
 model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
 
-PEXELS_API_KEY = "MUMbVhWI0H3O66g6210EDbCRL9bpvUqkarsWjoMm3yD39oPK4ZbN5O3x"
+PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY")
 STOP_WORDS = {"and", "the", "with", "for", "this", "that", "from"}
 
 

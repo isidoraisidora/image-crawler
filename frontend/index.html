@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Studio - Image Crawler Service</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc; /* Bright, clean Slate-50 background */
+            color: #1e293b;
+            height: 100vh;
+            margin: 0;
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* --- INITIAL STATE: Centered Layout --- */
+        .search-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .app-title {
+            transition: all 0.5s ease;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .search-box {
+            width: 100%;
+            max-width: 600px;
+            transition: all 0.5s ease;
+        }
+        .search-box input {
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .search-box input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+        }
+
+        .main-workspace {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease 0.2s;
+            height: 0;
+            overflow: hidden;
+        }
+
+        /* --- SEARCHED STATE: Shift to Top Layout --- */
+        .searched .search-wrapper {
+            height: auto;
+            padding-top: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .searched .app-title {
+            margin-bottom: 0;
+            font-size: 1.5rem !important;
+        }
+        .searched .search-box {
+            max-width: 500px;
+        }
+        .searched .main-workspace {
+            opacity: 1;
+            transform: translateY(0);
+            height: calc(100vh - 120px);
+            padding: 20px;
+        }
+
+        /* --- Split-Screen Workspace Adjustments --- */
+        .workspace-container {
+            height: 100%;
+        }
+        .gallery-panel {
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .gallery-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+        .gallery-panel::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
+        }
+        .thumb-strip {
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            background: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .thumb-strip:hover {
+            border-color: #3b82f6;
+            transform: translateX(4px);
+        }
+        .thumb-strip.active {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .inspection-panel {
+            background: #ffffff;
+            border-radius: 12px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .preview-img {
+            max-height: 45vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .tag-chip {
+            background: #f1f5f9;
+            color: #2563eb;
+            border: 1px solid #e2e8f0;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="search-wrapper" id="searchWrapper">
+        <div class="app-title" id="appTitle">
+            <h1 class="display-5 fw-bold text-dark m-0"> AI Image Studio</h1>
+            <p class="text-muted small m-0 mt-1" id="appSub">University Image Crawler Sub-Service</p>
+        </div>
+        <div class="search-box">
+            <form id="searchForm" class="d-flex gap-2">
+                <input type="text" id="queryInput" class="form-control form-control-lg bg-white" placeholder="Type a concept to crawl (e.g., tech, nature)..." required>
+                <button type="submit" class="btn btn-primary btn-lg px-4">Crawl</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container-fluid main-workspace">
+        <div class="row workspace-container g-4">
+
+            <div class="col-md-5 col-lg-4 gallery-panel" id="galleryPanel"></div>
+
+            <div class="col-md-7 col-lg-8 h-100">
+                <div class="inspection-panel p-4 text-center" id="inspectionPanel">
+                    <div class="text-muted">
+                        <span class="fs-1 d-block mb-2">👁️‍🗨️</span>
+                        <h5>AI Inspector Idle</h5>
+                        <p class="small">Select an image from the feed to view raw analysis profiles.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+    let dataset = [];
+
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const query = document.getElementById('queryInput').value;
+        const galleryPanel = document.getElementById('galleryPanel');
+        const inspectionPanel = document.getElementById('inspectionPanel');
+
+        // Trigger the transition layout shift immediately!
+        document.body.classList.add('searched');
+
+        galleryPanel.innerHTML = `
+            <div class="text-center mt-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted small fw-medium">Executing parallel AI workloads...</p>
+            </div>`;
+
+        inspectionPanel.innerHTML = `
+            <div class="text-muted text-center">
+                <h5>Waiting for batch synchronization...</h5>
+            </div>`;
+
+        try {
+            const response = await fetch(`/fetch-images?query=${encodeURIComponent(query)}`);
+            dataset = await response.json();
+
+            // FIX: Robust check for backend exceptions or string details before iterating
+            if (!response.ok || dataset.error || !Array.isArray(dataset) || dataset.length === 0) {
+                const errMsg = dataset.detail || dataset.error || "No crawlable data returned.";
+                galleryPanel.innerHTML = `<div class="alert alert-warning text-center mt-3">${errMsg}</div>`;
+                inspectionPanel.innerHTML = `
+                    <div class="text-muted text-center">
+                        <h5>Workspace Empty</h5>
+                        <p class="small">The query returned no items or hit an error flag.</p>
+                    </div>`;
+                return;
+            }
+
+            // Render Left Sidebar Items
+            galleryPanel.innerHTML = '';
+            dataset.forEach((item, index) => {
+                galleryPanel.innerHTML += `
+                    <div class="thumb-strip p-2 mb-2 rounded-3 d-flex align-items-center gap-3" onclick="inspectImage(${index}, this)">
+                        <img src="${item.url}" class="rounded-2" style="width: 70px; height: 70px; object-fit: cover;">
+                        <div class="overflow-hidden">
+                            <span class="text-primary fw-semibold small d-block">Asset #${index + 1}</span>
+                            <span class="text-muted text-truncate d-block small">${item.url}</span>
+                        </div>
+                    </div>`;
+            });
+
+            // Auto inspect first element cleanly now that array structure is validated
+            inspectImage(0, document.querySelector('.thumb-strip'));
+
+        } catch (error) {
+            galleryPanel.innerHTML = `<div class="alert alert-danger text-center mt-3">Connection breakdown.</div>`;
+            console.error(error);
+        }
+    });
+
+    function inspectImage(index, element) {
+        // Prevent crashes if called on an invalid index or empty array
+        if (!dataset || !dataset[index]) return;
+
+        document.querySelectorAll('.thumb-strip').forEach(el => el.classList.remove('active'));
+        if(element) element.classList.add('active');
+
+        const item = dataset[index];
+        const inspectionPanel = document.getElementById('inspectionPanel');
+
+        // Safe check to make sure tags list exists
+        const tagsArray = Array.isArray(item.tags) ? item.tags : [];
+        const tagsHtml = tagsArray.map(tag => `<span class="badge tag-chip p-2 me-1 mb-1">#${tag}</span>`).join('');
+
+        inspectionPanel.innerHTML = `
+            <div class="w-100 d-flex flex-column h-100 justify-content-between text-start">
+                <div class="text-center py-2 flex-grow-1 d-flex align-items-center justify-content-center bg-light rounded-3 mb-3 border">
+                    <img src="${item.url}" class="preview-img img-fluid" alt="Preview">
+                </div>
+                <div class="border-top pt-3">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle mb-2">BLIP Inference Complete</span>
+                    <h3 class="text-dark fw-bold mb-2">${item.ai_description || 'No description provided.'}</h3>
+                    <div class="mt-3">
+                        <h6 class="text-muted text-uppercase small fw-bold tracking-wider">Extracted Semantic Keywords:</h6>
+                        <div class="d-flex flex-wrap mt-2">${tagsHtml || '<span class="text-muted small">No structural tags identified.</span>'}</div>
+                    </div>
+                </div>
+            </div>`;
+    }
+</script>
+</body>
+</html>

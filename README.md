@@ -50,7 +50,6 @@ Note: Dependencies include fastapi, uvicorn, httpx, pillow, transformers, torch,
 Inside the python-service/ directory, verify that your .env file contains your valid endpoint authentication key without spaces or quotation marks:
 
 Plaintext
-PEXELS_API_KEY=MUMbVhWI0H3O66g6210EDbCRL9bpvUqkarsWjoMm3yD39oPK4ZbN5O3x
  How to Run the Project Safely
  CRITICAL REQUIREMENT: Never double-click index.html or use PyCharm's built-in floating browser preview tools. If you open the file directly, the frontend will fail to communicate with the Python ML models and will throw 404 Not Found or SyntaxError script execution blocks.
 
